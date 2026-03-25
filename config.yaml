@@ -1,0 +1,57 @@
+# study-ingest Skill 配置文件
+
+# Neo4j 配置
+neo4j:
+  uri: bolt://localhost:7687
+  user: neo4j
+  password: ${NEO4J_PASSWORD}  # 建议使用环境变量
+
+# SQLite 配置
+sqlite:
+  path: ./study_engine.db
+
+# 敏感信息检测规则
+sensitivity:
+  enabled: true
+  rules:
+    - name: api_key
+      pattern: "sk-[a-zA-Z0-9]{20,}"
+      replacement: "<REDACTED>"
+    - name: github_token
+      pattern: "ghp_[a-zA-Z0-9]{36}"
+      replacement: "<REDACTED>"
+    - name: aws_key
+      pattern: "AKIA[0-9A-Z]{16}"
+      replacement: "<REDACTED>"
+    - name: password
+      pattern: "password\\s*[=:]\\s*['\"]?[^\\s'\"]+"
+      replacement: "${PASSWORD}"
+    - name: email
+      pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+      replacement: "<PERSONAL_INFO>"
+    - name: phone
+      pattern: "1[3-9]\\d{9}"
+      replacement: "<PERSONAL_INFO>"
+    - name: local_path_unix
+      pattern: "/home/[a-zA-Z0-9_]+/"
+      replacement: "<PROJECT_ROOT>/"
+    - name: local_path_windows
+      pattern: "C:\\\\Users\\\\[a-zA-Z0-9_]+\\\\"
+      replacement: "<PROJECT_ROOT>\\"
+
+# GitHub 发布配置（可选）
+github:
+  enabled: false
+  token: ${GITHUB_TOKEN}
+  repo: your-username/knowledge-notes
+  branch: main
+  auto_commit: true
+
+# 学习进度配置
+learning:
+  initial_weight: 0
+  weight_increase_on_question: 10
+  weight_decrease_on_correct: 5
+  weight_increase_on_wrong: 8
+  review_interval_days: 3
+  mastery_threshold: 2  # 连续正确次数
