@@ -11,7 +11,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
-from ingest import run_skill
+from app.api.v1.ingest import run_skill
 
 
 async def test_ingest_concept():
@@ -52,7 +52,7 @@ async def test_sensitive_info():
     print("测试 3: 敏感信息检测")
     print("=" * 60)
     
-    from ingest import StudyIngest
+    from app.api.v1.ingest import StudyIngest
     
     ingest = StudyIngest("bolt://localhost:7687", "neo4j", "password")
     

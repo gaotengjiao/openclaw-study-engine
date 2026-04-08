@@ -131,3 +131,14 @@ rm study_engine.db
 ### 敏感信息误检
 
 在 `config.yaml` 中调整正则规则。
+
+### 整体模块解耦架构图
+
+- [ ]  Ingest Orchestrator (ingest.py): 业务总调度，负责接收用户指令并协调各模块工作。
+
+- [ ]  LLM Processor: 处理敏感信息脱敏（8种规则）及根据不同学科（Subject）生成补全 Prompt。
+
+- [ ]  Graph Service: 专门负责 Neo4j 操作，支持多用户标签隔离（如 :User_Adam）。
+
+- [ ]  DB Manager: 负责 SQLite 操作，采用标准 SQL 以兼容未来向 MySQL 的迁移。
+
