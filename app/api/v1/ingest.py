@@ -6,20 +6,15 @@ from app.services.ingest_service import IngestService
 
 router = APIRouter()
 
-@router.post("/learn")
-async def learn_concept(request: IngestRequest, db: Session = Depends(get_db)):
+@router.post("/")  # 修正：移除多余的 /ingest 层级
+async def ingest_content(request: IngestRequest, db: Session = Depends(get_db)):
     """
-    学习新概念接口
+    接收用户学习内容并触发 AI 审计流程
     """
     service = IngestService(db)
     try:
         result = await service.execute_full_ingest(request)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# 注意：这里的路径是 "/"，因为在 main.py 中已经挂载了 "/api/v1/ingest"
-@router.post("/")
-async def ingest_content(request: IngestRequest, db: Session = Depends(get_db)):
-    service = IngestService(db)
-    return await service.execute_full_ingest(request)
+        # Java 风格的全局异常捕获反馈
+        raise HTTPException(status_code=500, detail=f"Service Error: {str(e)}")

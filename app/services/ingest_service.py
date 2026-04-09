@@ -14,11 +14,10 @@ class IngestService:
 
     async def execute_full_ingest(self, request: IngestRequest):
         """
-        核心业务流：加入异常隔离机制
+        核心业务流：知识提取 -> 进度管理 -> 语义审计
         """
 
-        # 1. 知识提取 (增加 Try-Except 隔离)
-        # 即使 AI 生成树失败，我们也给前端一个空的根节点，保证流程不中断
+        # 1. 调用 LLM 生成知识结构树 (增加异常隔离)
         try:
             knowledge_tree = await self.llm.get_completed_tree(
                 subject=request.subject,
@@ -26,16 +25,15 @@ class IngestService:
                 user_content=request.content
             )
         except Exception as e:
-            print(f"⚠️ [LLM Error] 生成知识树失败: {str(e)}")
+            print(f"⚠️ [LLM Error] 知识树生成失败: {e}")
             knowledge_tree = {"name": request.concept, "children": []}
 
-        # 2. 进度查询
+        # 2. 查询或初始化用户进度
         progress = self.db.query(LearningProgress).filter_by(
             user_id=request.user_id,
             concept_name=request.concept
         ).first()
 
-        # 3. 初始化/更新基础记录
         if not progress:
             progress = LearningProgress(
                 user_id=request.user_id,
@@ -48,7 +46,7 @@ class IngestService:
             self.db.add(progress)
             self.db.flush()
 
-        # 4. 执行费曼审计 (保持异常隔离)
+        # 4. 执行费曼语义审计 (增加异常隔离)
         evaluation_result = None
         if request.content and len(request.content.strip()) > 5:
             try:
@@ -57,15 +55,13 @@ class IngestService:
                     user_content=request.content
                 )
             except Exception as e:
-                # 降级处理：告知用户录入成功但审计延迟
-                print(f"⚠️ [Mastery Error] AI 审计失败: {str(e)}")
+                print(f"⚠️ [Mastery Error] AI 审计失败: {e}")
                 evaluation_result = {
                     "score": 0,
-                    "feedback": "您的理解已录入，但 AI 导师暂时忙碌，稍后为您评估。",
-                    "offline": True
+                    "feedback": "理解已保存，但 AI 导师目前不在线，请稍后再看评估。"
                 }
 
-        # 5. 提交事务
+        # 5. 显式提交事务
         try:
             self.db.commit()
             self.db.refresh(progress)
@@ -73,7 +69,7 @@ class IngestService:
             self.db.rollback()
             raise e
 
-        # 6. 返回聚合结果
+        # 6. 返回结果
         return {
             "concept": request.concept,
             "subject": request.subject,

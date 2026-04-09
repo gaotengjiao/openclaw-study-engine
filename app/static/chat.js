@@ -18,35 +18,43 @@ async function sendMessage() {
     const content = input.value.trim();
     if (!content) return;
 
+    // 显示用户消息
     appendMessage('user', content);
     input.value = '';
 
     try {
-        // 注意路径：如果是调用 IngestService，路径通常是 /api/v1/ingest/ingest
+        // 修正路径：必须与 ingest.py 路由和 main.py 的 prefix 严格对应
         const response = await fetch('/api/v1/ingest/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                user_id: "adam",
+                user_id: "adam_37",
                 subject: "AI算法",
                 concept: "Transformer",
                 content: content
             })
         });
 
-        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`请求失败: ${response.status} - ${errorText}`);
+        }
 
         const data = await response.json();
 
-        // 解析 IngestService 返回的聚合结果
-        const aiResponse = data.evaluation?.feedback || "内容已录入，AI 正在思考...";
-        const score = data.evaluation?.score !== undefined ? `【得分：${data.evaluation.score}】\n` : "";
+        // 渲染评估结果
+        let aiText = "";
+        if (data.evaluation) {
+            aiText = `【得分：${data.evaluation.score || 0}】\n${data.evaluation.feedback || "录入成功"}`;
+        } else {
+            aiText = "已同步学习进度到知识库。";
+        }
 
-        appendMessage('ai', score + aiResponse);
+        appendMessage('ai', aiText);
 
     } catch (error) {
-        console.error('Error:', error);
-        appendMessage('ai', "抱歉，连接服务器失败。请检查后端是否正常启动。");
+        console.error('Fetch Error:', error);
+        appendMessage('ai', `系统提示: ${error.message}`);
     }
 }
 
